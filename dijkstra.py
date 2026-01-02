@@ -1,7 +1,9 @@
 import math
 import heapq
 
-def dijkstra (graph, v, origin):
+from graph import Graph
+
+def dijkstra (graph, origin):
 
     """
     
@@ -119,4 +121,10 @@ def dijkstra_heap(graph, origin):
 
     return dist
 
-
+if __name__ == "__main__":
+    g = Graph()
+    g.random_init(num_vertices=4, edge_probability=0.5, seed=4)
+    print('Utilizando dijkstra padrão:')
+    print(dijkstra(g.adj, 0))
+    print('Utilizando dijkstra com heap binário:')
+    print(dijkstra_heap(g.adj, 0))
