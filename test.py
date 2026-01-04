@@ -4,6 +4,7 @@ import time
 from graph import Graph
 from dijkstra import dijkstra, dijkstra_heap
 from bmssp import run_bmssp
+from bmssp_simple import bmssp_simple
 
 def main():
     # ------ cria grafo aleatório ------
@@ -27,15 +28,23 @@ def main():
     dist_b = run_bmssp(g, origin)
     t5 = time.time()
 
+    # --------- BMSSP simplificado ----------
+    t4 = time.time()
+    dist_bs = bmssp_simple(g, origin)
+    t5 = time.time()
+
+
     print("\n=== Resultados ===")
     print("Dijkstra simples:      ", dist_d1)
     print("Dijkstra com heap:     ", dist_d2)
     print("BMSSP:                 ", dist_b)
+    print("BMSSP simplificado: ", dist_bs)
 
     print("\n=== Tempos (segundos) ===")
     print("Dijkstra simples:", round(t1 - t0, 6))
     print("Heap Dijkstra:   ", round(t3 - t2, 6))
     print("BMSSP:           ", round(t5 - t4, 6))
+    print("BMSSP Simple:", round(t5 - t4, 6))
 
     # --------- comparação ----------
     ok = True

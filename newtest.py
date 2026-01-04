@@ -1,9 +1,11 @@
 import math
 import time
+import random
 
 from graph import Graph
 from dijkstra import dijkstra, dijkstra_heap
 from bmssp import run_bmssp
+from bmssp_simple import bmssp_simple
 
 
 # --------------------------------------------------------
@@ -19,31 +21,56 @@ def benchmark(fn, *args, repeats=3):
     return result, t / repeats
 
 
-def build_graph(n, avg_degree=4, weighted=True):
+def build_graph(n, avg_degree=4, weighted=True, seed=None):
     g = Graph(directed=True)
 
-    # probabilidade para manter grau constante ~ paper
+    # 1️⃣ gera normalmente
     p = avg_degree / n
-
     g.random_init(
         num_vertices=n,
         edge_probability=p,
         weighted=weighted,
-        seed=None
+        seed=seed
     )
+
+    # 2️⃣ garante conectividade (faz um spanning tree)
+    visited = set()
+
+    def dfs(u):
+        visited.add(u)
+        for v, _ in g.adj[u]:
+            if v not in visited:
+                dfs(v)
+
+    dfs(0)
+
+    # 3️⃣ conecta componentes desconexas
+    last = 0
+    for v in range(1, n):
+        if v not in visited:
+            # conecta v ao último alcançável
+            g.add_edge(last, v, 1.0)
+            dfs(v)
+        last = v
+
     return g
+
 
 
 def main():
     origin = 0
 
     # tamanhos crescentes
-    sizes = [200, 500, 1000, 3000, 6000]
+    sizes = [10, 100, 200, 500, 1000]
 
-    # parâmetros BMSSP (boas escolhas educacionais)
-    L = 4
-    k = 6
-    t = 2
+    # parâmetros BMSSP 
+    L = 1000
+    k = 1000
+    t = 500
+
+    # parâmetros BMSSP Simple
+    w = 20
+    p = 4
 
     for n in sizes:
         print(f"\n=================== n = {n} ===================")
@@ -59,9 +86,12 @@ def main():
         # --------- BMSSP ----------
         dist_b, tb = benchmark(run_bmssp, g, origin, L, k, t)
 
+        # --------- BMSSP Simple ----------
+        dist_bs, tbs = benchmark(run_bmssp, g, origin, w, p)
+
         # --------- checagem ----------
         ok = True
-        for a, b in zip(dist_d2, dist_b):
+        for a, b in zip(dist_d2, dist_bs):
             if abs(a - b) > 1e-6:
                 ok = False
                 break
@@ -69,7 +99,14 @@ def main():
         print(f"Dijkstra simples: {round(td1, 6)} s")
         print(f"Dijkstra heap:   {round(td2, 6)} s")
         print(f"BMSSP:           {round(tb, 6)} s")
+        print(f"BMSSP Simple:           {round(tb, 6)} s")
         print("Correção:", "OK ✅" if ok else "⚠️ Diferente")
+
+        print("\n=== Resultados ===")
+        print("Dijkstra simples:      ", dist_d1)
+        print("Dijkstra com heap:     ", dist_d2)
+        print("BMSSP:                 ", dist_b)
+        print("BMSSP simplificado: ", dist_bs)
 
 
 if __name__ == "__main__":
