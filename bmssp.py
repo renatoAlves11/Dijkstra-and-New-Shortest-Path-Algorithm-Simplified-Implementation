@@ -65,8 +65,7 @@ def find_pivots(graph: Graph, B, S, dist, k):
                 nd = dist[u] + w
 
                 if nd <= dist[v]:
-                    if nd < dist[v]:
-                        dist[v] = nd
+                    dist[v] = nd
                     if nd < B:
                         Wi.add(v)
 
@@ -83,11 +82,11 @@ def find_pivots(graph: Graph, B, S, dist, k):
             if v in W and dist[v] == dist[u] + w:
                 F.add((u, v))
 
-    # pivôs = raízes com >= k vértices
+    # pivôs = raízes com > k vértices
     P = set()
     for u in S:
         count = sum(1 for (a, b) in F if a == u or b == u)
-        if count >= k:
+        if count > k:
             P.add(u)
 
     return P, W
@@ -97,50 +96,136 @@ def find_pivots(graph: Graph, B, S, dist, k):
 # Algorithm 3 — BMSSP(l, B, S)
 # ==========================================================
 def bmssp(graph: Graph, l, B, S, dist, t=2, k=2):
-
+    # -------------------------
+    # Caso base
+    # -------------------------
     if l == 0:
         return base_case(graph, B, S, dist, k)
 
+    # -------------------------
+    # Encontrar pivôs
+    # -------------------------
     P, W = find_pivots(graph, B, S, dist, k)
 
-    D = []
-    for x in P:
-        heapq.heappush(D, (dist[x], {x}))
+    # =====================================================
+    # D = estrutura simplificada (D0 / D1)
+    # D0  -> valores vindos de BatchPrepend (sempre menores)
+    # D1  -> valores inseridos "normalmente"
+    # =====================================================
+    D0 = []        # heap menor-primeiro
+    D1 = []
 
+    # M = 2^{(l−1)t}
+    M = 2 ** ((l - 1) * t)
+
+    # inserir pivôs em D1
+    for x in P:
+        heapq.heappush(D1, (dist[x], {x}))
+
+    # -------------------------
+    # inicializações do paper
+    # -------------------------
     U = set()
     i = 0
     B0 = min((dist[x] for x in P), default=B)
 
-    while len(U) < k * (2 ** (l * t)) and D:
-        i += 1
-        Bi, Si = heapq.heappop(D)
+    # =====================================================
+    # Função auxiliar: PULL()
+    # =====================================================
+    def pull():
+        """Retorna até M itens com menores valores (misturando D0 e D1)."""
+        batch = []
 
+        while len(batch) < M and (D0 or D1):
+            # compara topo de D0 e D1
+            cands = []
+            if D0:
+                cands.append((D0[0][0], 0))
+            if D1:
+                cands.append((D1[0][0], 1))
+
+            _, typ = min(cands)
+
+            if typ == 0:
+                batch.append(heapq.heappop(D0))
+            else:
+                batch.append(heapq.heappop(D1))
+
+        if not (D0 or D1):
+            sep = B
+        else:
+            # menor valor restante
+            rest = []
+            if D0:
+                rest.append(D0[0][0])
+            if D1:
+                rest.append(D1[0][0])
+            sep = min(rest)
+
+        Skeys = set(s for _, Sset in batch for s in Sset)
+        return sep, Skeys, batch
+
+    # =====================================================
+    # LOOP PRINCIPAL
+    # =====================================================
+    while len(U) < k * (2 ** (l * t)) and (D0 or D1):
+
+        i += 1
+        Bi, Si, pulled = pull()
+
+        # chamada recursiva
         Bp, Ui = bmssp(graph, l - 1, Bi, Si, dist, t, k)
 
         U |= Ui
         B0 = min(B0, Bp)
 
+        K = []     # itens que ficarão na faixa intermediária
+
+        # relaxação sobre arestas saindo de Ui
         for u in Ui:
             for v, w in graph.adj[u]:
                 nd = dist[u] + w
 
                 if nd <= dist[v]:
-                    if nd < dist[v]:
-                        dist[v] = nd
+                    dist[v] = nd
 
-                    if nd < min(Bp, B):
-                        heapq.heappush(D, (nd, {v}))
+                    # -----------------------------
+                    # Faixa 1: [Bi , B)
+                    # vai para D1 (Insert)
+                    # -----------------------------
+                    if Bi <= nd < B:
+                        heapq.heappush(D1, (nd, {v}))
 
-    # fase final
+                    # -----------------------------
+                    # Faixa 2: [Bp , Bi)
+                    # acumula em K (BatchPrepend)
+                    # -----------------------------
+                    elif Bp <= nd < Bi:
+                        K.append((nd, {v}))
+
+        # batch prepend = insere tudo em D0 como "menor do mundo"
+        for item in K:
+            heapq.heappush(D0, item)
+
+        # também batch-prepend todas as fontes originais de Si na faixa
+        for x in Si:
+            dx = dist[x]
+            if Bp <= dx < Bi:
+                heapq.heappush(D0, (dx, {x}))
+
+    # -------------------------
+    # FECHAMENTO
+    # -------------------------
     U |= {x for x in W if dist[x] < B0}
 
     return B0, U
 
 
+
 # ==========================================================
 # Wrapper externo — que roda BMSSP completo
 # ==========================================================
-def run_bmssp(graph: Graph, source, L=4, k=6, t=2):
+def run_bmssp(graph: Graph, source, L=2, k=2, t=2):
     # d^[·] — estimativas de distâncias
     dist = {v: inf for v in graph.vertices()}
     dist[source] = 0

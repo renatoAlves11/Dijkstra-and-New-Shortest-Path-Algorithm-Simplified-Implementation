@@ -86,12 +86,9 @@ def main():
         # --------- BMSSP ----------
         dist_b, tb = benchmark(run_bmssp, g, origin, L, k, t)
 
-        # --------- BMSSP Simple ----------
-        dist_bs, tbs = benchmark(run_bmssp, g, origin, w, p)
-
         # --------- checagem ----------
         ok = True
-        for a, b in zip(dist_d2, dist_bs):
+        for a, b in zip(dist_d2, dist_b):
             if abs(a - b) > 1e-6:
                 ok = False
                 break
@@ -106,7 +103,6 @@ def main():
         print("Dijkstra simples:      ", dist_d1)
         print("Dijkstra com heap:     ", dist_d2)
         print("BMSSP:                 ", dist_b)
-        print("BMSSP simplificado: ", dist_bs)
 
 
 if __name__ == "__main__":
