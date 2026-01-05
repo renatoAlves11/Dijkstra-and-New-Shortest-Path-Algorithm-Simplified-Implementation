@@ -65,6 +65,101 @@ class Graph:
     def __len__(self) -> int:
         return len(self.adj)
 
+    def random_sparse_init(
+        self,
+        num_vertices: int,
+        max_edges_per_vertex: int = 2,
+        weighted: bool = True,
+        min_weight: float = 1.0,
+        max_weight: float = 10.0,
+        seed: int | None = None,
+    ) -> None:
+        """
+        Initialize a sparse graph.
+
+        Number of edges is O(V).
+        """
+        if seed is not None:
+            random.seed(seed)
+
+        self.adj.clear()
+
+        for v in range(num_vertices):
+            self.add_vertex(v)
+
+        if self.directed:
+            # DAG: edges only i -> j where i < j
+            for i in range(num_vertices):
+                possible_targets = list(range(i + 1, num_vertices))
+                random.shuffle(possible_targets)
+
+                for j in possible_targets[:max_edges_per_vertex]:
+                    weight = (
+                        random.uniform(min_weight, max_weight)
+                        if weighted
+                        else 1.0
+                    )
+                    self.add_edge(i, j, weight)
+        else:
+            # Undirected sparse graph
+            for i in range(num_vertices):
+                possible_targets = list(range(i + 1, num_vertices))
+                random.shuffle(possible_targets)
+
+                for j in possible_targets[:max_edges_per_vertex]:
+                    weight = (
+                        random.uniform(min_weight, max_weight)
+                        if weighted
+                        else 1.0
+                    )
+                    self.add_edge(i, j, weight)
+
+    def random_dense_init(
+        self,
+        num_vertices: int,
+        edge_probability: float = 0.8,
+        weighted: bool = True,
+        min_weight: float = 1.0,
+        max_weight: float = 10.0,
+        seed: int | None = None,
+    ) -> None:
+        """
+        Initialize a dense graph.
+
+        Number of edges is O(V^2).
+        """
+        if seed is not None:
+            random.seed(seed)
+
+        self.adj.clear()
+
+        for v in range(num_vertices):
+            self.add_vertex(v)
+
+        if self.directed:
+            # Dense DAG
+            for i in range(num_vertices):
+                for j in range(i + 1, num_vertices):
+                    if random.random() <= edge_probability:
+                        weight = (
+                            random.uniform(min_weight, max_weight)
+                            if weighted
+                            else 1.0
+                        )
+                        self.add_edge(i, j, weight)
+        else:
+            # Dense undirected graph
+            for i in range(num_vertices):
+                for j in range(i + 1, num_vertices):
+                    if random.random() <= edge_probability:
+                        weight = (
+                            random.uniform(min_weight, max_weight)
+                            if weighted
+                            else 1.0
+                        )
+                        self.add_edge(i, j, weight)
+
+
     # ----------------------------
     # Random graph generation
     # ----------------------------
@@ -81,7 +176,7 @@ class Graph:
         Initialize the graph randomly.
 
         :param num_vertices: number of vertices
-        :param edge_probability: probability of an edge between any pair
+        :param edge_probability: probability of an edge between any ordered pair
         :param weighted: whether edges have random weights
         :param min_weight: minimum edge weight
         :param max_weight: maximum edge weight
@@ -96,16 +191,30 @@ class Graph:
         for v in range(num_vertices):
             self.add_vertex(v)
 
-        # create edges
-        for i in range(num_vertices):
-            for j in range(i + 1, num_vertices):
-                if random.random() <= edge_probability:
-                    weight = (
-                        random.uniform(min_weight, max_weight)
-                        if weighted
-                        else 1.0
-                    )
-                    self.add_edge(i, j, weight)
+        if self.directed:
+            # Directed Acyclic Graph (DAG):
+            # edges only from lower index to higher index (i < j)
+            for i in range(num_vertices):
+                for j in range(i + 1, num_vertices):
+                    if random.random() <= edge_probability:
+                        weight = (
+                            random.uniform(min_weight, max_weight)
+                            if weighted
+                            else 1.0
+                        )
+                        self.add_edge(i, j, weight)
+        else:
+            # Undirected graph: consider each unordered pair once
+            for i in range(num_vertices):
+                for j in range(i + 1, num_vertices):
+                    if random.random() <= edge_probability:
+                        weight = (
+                            random.uniform(min_weight, max_weight)
+                            if weighted
+                            else 1.0
+                        )
+                        self.add_edge(i, j, weight)
+
 
     # ----------------------------
     # Utility

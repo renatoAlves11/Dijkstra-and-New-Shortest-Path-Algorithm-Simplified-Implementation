@@ -9,7 +9,7 @@ from bmssp_simple import bmssp_simple
 def main():
     # ------ cria grafo aleatório ------
     g = Graph()
-    g.random_init(num_vertices=10, edge_probability=0.4, seed=2)
+    g.random_dense_init(num_vertices=100, seed=3)
 
     origin = 0
 
