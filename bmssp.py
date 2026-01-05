@@ -1,18 +1,12 @@
 # bmssp.py
 #
-# Implementação educacional inspirada fielmente nos 3 algoritmos
-# do paper "Breaking the Sorting Barrier..."
+# Implementação educacional inspirada nos 3 algoritmos
+# do paper "Breaking the Sorting Barrier for Directed Single-Source Shortest Paths"
 #
 # Componentes:
 # 1. BaseCase (Algorithm 2)
 # 2. FindPivots (Algorithm 1)
 # 3. BMSSP (Algorithm 3)
-#
-# Comparação:
-# - Melhora sobre o código do outro grupo:
-#   ✔ pivôs de fato reduzem a fronteira
-#   ✔ recursão sobre intervalos de distância
-#   ✔ mantém coerência com a definição do paper
 #
 # Observação: Esta versão é simplificada para ensino.
 
